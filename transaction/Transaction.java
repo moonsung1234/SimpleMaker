@@ -110,6 +110,7 @@ public class Transaction {
 			default :
 				if(codes[i].replaceAll("[0-9a-zA-Z°¡-ÆR\n]", "").equals(",")) {
 					Token<Token> var_token = new Token<>();
+					Token parameter_token = this.getSetToken(codes, i + 1);
 					
 					if(Pattern.matches("^\\[[\\W\\w]+\\]$", codes[i + 1])) {
 						Token<Object> token_value = new Token<>();
@@ -122,14 +123,20 @@ public class Transaction {
 						var_token.setBuiltInIndex(++i);
 						
 						return var_token;
+					
+					} else if(parameter_token == null) {
+						Token<Object> token_value = new Token<>();
+						
+						token_value.setToken("");
+						token_value.addParameter(codes[i + 1]);
+						
+						var_token.setToken(codes[i]);
+						var_token.addParameter(token_value);
+						var_token.setBuiltInIndex(++i);
+						
+						return var_token;
 					}
-					
-					Token parameter_token;
-					
 					var_token.setToken(codes[i]);
-					
-					parameter_token = this.getSetToken(codes, ++i);
-					
 					var_token.addParameter(parameter_token);
 					var_token.setBuiltInIndex(parameter_token.getBuiltInIndex());
 					
@@ -212,10 +219,16 @@ public class Transaction {
 			case "Print" :
 				Value<String> print_value = new Value<>();
 				String var_name = token.getParameter(0).getValue().toString();
+				Object value = this.getStackVariableValue(var_name);
 				
 				print_value.setValue(var_name);
 				
-				showMessageDialog(null, this.getStackVariableValue(var_name));
+				if(value != null) {
+					showMessageDialog(null, value);
+				
+				} else {
+					showMessageDialog(null, var_name);
+				}
 				
 				return print_value;
 				
@@ -226,8 +239,15 @@ public class Transaction {
 					if(put_value == null) {
 						put_value = new Value<>();
 						Token temp_token = (Token) token.getParameter(0).getValue();
+						Object var_value = this.getStackVariableValue(temp_token.getParameter(0).getValue().toString());
 						
-						put_value.setValue(this.getStackVariableValue(temp_token.getParameter(0).getValue().toString()));
+						if(var_value == null) {
+							put_value.setValue(temp_token.getParameter(0).getValue().toString());
+						
+						} else {
+							put_value.setValue(var_value);							
+						}
+						
 					}
 					
 					this.stack.put(token.getToken().replace(",", ""), put_value);
